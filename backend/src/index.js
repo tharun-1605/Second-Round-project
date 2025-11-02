@@ -29,7 +29,6 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight OPTIONS requests with same options
 app.use(express.json());
 
 // Socket.io connection

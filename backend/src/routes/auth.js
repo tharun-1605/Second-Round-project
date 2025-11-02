@@ -29,17 +29,18 @@ router.post('/register', async (req, res) => {
     if (!sendResult.success) {
       // If email fails, delete the voter and return error
       await Voter.deleteOne({ email });
-      return res.status(500).json({ 
+      console.error('Email sending failed during registration:', sendResult.error);
+      return res.status(500).json({
         message: 'Failed to send verification email. Please try again.',
-        error: sendResult.error 
+        error: sendResult.error
       });
     }
 
-    const responsePayload = { 
+    const responsePayload = {
       message: 'Registration initiated. Please verify your email.',
-      email 
+      email
     };
-    
+
     // Include preview URL for development
     if (sendResult.previewUrl) {
       responsePayload.previewUrl = sendResult.previewUrl;
@@ -47,6 +48,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json(responsePayload);
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(400).json({ message: error.message });
   }
 });

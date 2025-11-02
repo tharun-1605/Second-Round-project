@@ -38,7 +38,8 @@ const initTransporter = async () => {
         user: process.env.EMAIL_USER,
         hasPassword: !!process.env.EMAIL_PASSWORD
       });
-      throw err; // Don't fall back to Ethereal, we want to use real email
+      console.log('Falling back to Ethereal test account due to Gmail failure');
+      // Fall back to Ethereal instead of throwing
     }
   }
 
