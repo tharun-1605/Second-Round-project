@@ -23,12 +23,13 @@ const io = new Server(httpServer, {
 });
 
 // Middleware
-app.use(cors({
+const corsOptions = {
   origin: ['http://localhost:5173', 'https://second-round-project-ir7s.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.options('*', cors()); // Handle preflight OPTIONS requests
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight OPTIONS requests with same options
 app.use(express.json());
 
 // Socket.io connection
