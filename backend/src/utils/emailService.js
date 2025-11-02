@@ -71,13 +71,20 @@ initTransporter();
 const otpStore = new Map();
 
 export const sendOTP = async (email, otp) => {
-  if (!transporter) {
-    await initTransporter();
-  }
-
   try {
+    // Ensure transporter is initialized
+    if (!transporter) {
+      await initTransporter();
+    }
+
+    // Double-check transporter is available
+    if (!transporter) {
+      console.error('No email transporter available');
+      return { success: false, error: 'Email service not available' };
+    }
+
     const mailOptions = {
-      from: `Voting System <${process.env.EMAIL_USER}>`,
+      from: usingTestAccount ? 'Voting System <noreply@test.com>' : `Voting System <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Voting System - Email Verification OTP',
       html: `
