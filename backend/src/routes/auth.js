@@ -27,7 +27,6 @@ router.post('/register', async (req, res) => {
     const sendResult = await sendOTP(email, otp);
 
     if (!sendResult.success) {
-      // If email fails, delete the voter and return error
       await Voter.deleteOne({ email });
       console.error('Email sending failed during registration:', sendResult.error);
       return res.status(500).json({
@@ -41,15 +40,14 @@ router.post('/register', async (req, res) => {
       email
     };
 
-    // Include preview URL for development
     if (sendResult.previewUrl) {
       responsePayload.previewUrl = sendResult.previewUrl;
     }
 
     res.status(201).json(responsePayload);
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(400).json({ message: error.message });
+    console.error('An unexpected error occurred during registration:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
   }
 });
 

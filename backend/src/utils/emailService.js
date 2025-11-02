@@ -9,12 +9,10 @@ let usingTestAccount = false;
 let testAccountInfo = null;
 
 const initTransporter = async () => {
-  // If real credentials are provided, use Gmail SMTP. Otherwise, fall back to Ethereal test account.
-  console.log('Checking email credentials...');
-  console.log('EMAIL_USER:', process.env.EMAIL_USER);
-  console.log('EMAIL_PASSWORD exists:', !!process.env.EMAIL_PASSWORD);
+  console.log('Initializing email transporter...');
 
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    console.log('Attempting to use Gmail SMTP...');
     transporter = nodemailer.createTransport({
       service: 'gmail',
       host: 'smtp.gmail.com',
@@ -22,28 +20,23 @@ const initTransporter = async () => {
       secure: true, // use SSL
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD // This should be your App Password, not your regular Gmail password
+        pass: process.env.EMAIL_PASSWORD
       }
     });
 
     try {
       await transporter.verify();
-      console.log('Email transporter is ready (Gmail)');
-      console.log('Using email account:', process.env.EMAIL_USER);
+      console.log('Gmail transporter verified successfully.');
       usingTestAccount = false;
       return;
     } catch (err) {
       console.error('Gmail transporter verification failed:', err);
-      console.error('Email configuration:', {
-        user: process.env.EMAIL_USER,
-        hasPassword: !!process.env.EMAIL_PASSWORD
-      });
-      console.log('Falling back to Ethereal test account due to Gmail failure');
-      // Fall back to Ethereal instead of throwing
+      console.log('Falling back to Ethereal test account...');
     }
+  } else {
+    console.log('Gmail credentials not found. Using Ethereal test account.');
   }
 
-  // Create a test account (Ethereal) for local development/testing
   try {
     const account = await nodemailer.createTestAccount();
     testAccountInfo = account;
@@ -57,10 +50,10 @@ const initTransporter = async () => {
       }
     });
     await transporter.verify();
+    console.log('Ethereal transporter verified successfully.');
     usingTestAccount = true;
-    console.log('Email transporter is ready (Ethereal test account)');
   } catch (err) {
-    console.warn('Failed to create Ethereal test account:', err.message);
+    console.error('Failed to create or verify Ethereal test account:', err);
   }
 };
 
@@ -71,15 +64,15 @@ initTransporter();
 const otpStore = new Map();
 
 export const sendOTP = async (email, otp) => {
+  console.log(`Attempting to send OTP to ${email} with OTP ${otp}`);
   try {
-    // Ensure transporter is initialized
     if (!transporter) {
+      console.log('Transporter not initialized. Initializing now...');
       await initTransporter();
     }
 
-    // Double-check transporter is available
     if (!transporter) {
-      console.error('No email transporter available');
+      console.error('No email transporter available after initialization.');
       return { success: false, error: 'Email service not available' };
     }
 
@@ -107,14 +100,12 @@ export const sendOTP = async (email, otp) => {
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent to:', email, 'messageId:', info.messageId);
 
-    // Store OTP with timestamp
     otpStore.set(email, {
       otp,
       createdAt: Date.now(),
       attempts: 0
     });
 
-    // Set OTP to expire after 10 minutes
     setTimeout(() => {
       if (otpStore.has(email) && otpStore.get(email).otp === otp) {
         otpStore.delete(email);
