@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://second-round-project-4.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },

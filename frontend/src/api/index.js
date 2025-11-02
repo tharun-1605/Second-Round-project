@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = '/api';
+const API_URL = 'https://second-round-project-4.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL
