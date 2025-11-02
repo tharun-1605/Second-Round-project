@@ -5,6 +5,8 @@ import Register from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
 import VotingInterface from './components/VotingInterface';
 import ResultsVisualization from './components/ResultsVisualization';
+import Elections from './components/Elections';
+import Layout from './components/Layout';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -26,7 +28,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/elections" />;
   }
 
-  return children;
+  return <Layout>{children}</Layout>;
 };
 
 function App() {
@@ -43,6 +45,14 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/elections"
+            element={
+              <ProtectedRoute>
+                <Elections />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/elections/:id/vote" 

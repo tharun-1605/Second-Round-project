@@ -1,15 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Small amount of app-specific base styling kept from the original template */
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+@layer base {
+  :root {
+    --brand-500: #6366F1; /* indigo-500 */
+    --brand-600: #4F46E5; /* indigo-600 */
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-gradient-to-b from-gray-50 via-white to-indigo-50;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
 }
 
-body {
-  margin: 0;
+@layer components {
+  .card {
+    @apply bg-white rounded-xl p-6 shadow-lg;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-medium 
+           shadow-sm hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg font-medium
+           hover:bg-gray-50 hover:border-gray-300 transition-all duration-200;
+  }
+
+  .input-primary {
+    @apply w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900
+           placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20
+           transition-all duration-200;
+  }
 }
 
-/* Utility classes from Tailwind should cover most layout needs. */
+@layer utilities {
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-md;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600;
+  }
+
+  .shadow-card {
+    @apply shadow-lg shadow-gray-200/50;
+  }
+}
+

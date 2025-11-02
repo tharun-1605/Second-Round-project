@@ -87,7 +87,7 @@ export default function VotingInterface() {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="card">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">{election.title}</h1>
           <p className="text-gray-600 mb-8">{election.description}</p>
 
@@ -107,10 +107,10 @@ export default function VotingInterface() {
                 {election.candidates.map((candidate) => (
                   <div
                     key={candidate._id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors duration-200 ${
+                    className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedCandidate === candidate._id
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-indigo-300'
+                        ? 'border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-500 ring-opacity-50'
+                        : 'border-gray-200 hover:border-indigo-300 hover:shadow-md'
                     }`}
                     onClick={() => setSelectedCandidate(candidate._id)}
                   >

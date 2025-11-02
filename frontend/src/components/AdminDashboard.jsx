@@ -88,7 +88,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Create Election Form */}
-          <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="mt-8 card">
             <h2 className="text-xl font-semibold mb-4">Create New Election</h2>
             <form onSubmit={handleCreateElection} className="space-y-4">
               <div>
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Create Candidate Form */}
-          <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="mt-8 card">
             <h2 className="text-xl font-semibold mb-4">Add New Candidate</h2>
             <form onSubmit={handleCreateCandidate} className="space-y-4">
               <div>
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Elections List */}
-          <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="mt-8 card">
             <h2 className="text-xl font-semibold mb-4">Active Elections</h2>
             <div className="space-y-4">
               {elections.map((election) => (

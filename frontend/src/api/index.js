@@ -16,6 +16,9 @@ export const getCandidates = () => api.get('/candidates');
 export const createCandidate = (candidate) => api.post('/candidates', candidate);
 export const updateCandidateVotes = (id, voteCount) => api.patch(`/candidates/${id}`, { voteCount });
 
+// Election APIs
+export const getElections = () => api.get('/elections');
+
 // Vote APIs
 export const getVotes = () => api.get('/votes');
-export const castVote = (voterId, candidateId) => api.post('/votes', { voterId, candidateId });
+export const castVote = (payload) => api.post('/votes', payload);

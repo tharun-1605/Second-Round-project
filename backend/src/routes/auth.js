@@ -35,7 +35,11 @@ router.post('/register', async (req, res) => {
       return res.status(201).json({ message: 'Registration successful, but OTP email failed to send.', emailError: sendResult.error });
     }
 
-    res.status(201).json({ message: 'Registration successful. Please verify your email.' });
+    // Return previewUrl when using Ethereal test account so devs can open the message
+    const responsePayload = { message: 'Registration successful. Please verify your email.' };
+    if (sendResult.previewUrl) responsePayload.previewUrl = sendResult.previewUrl;
+
+    res.status(201).json(responsePayload);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -48,7 +52,11 @@ router.get('/test-email', async (req, res) => {
     if (!email) return res.status(400).json({ message: 'Email query param required' });
     const otp = generateOTP();
     const result = await sendOTP(email, otp);
-    if (result.success) return res.json({ message: 'Test email sent', info: result.info });
+    if (result.success) {
+      const payload = { message: 'Test email sent', info: result.info };
+      if (result.previewUrl) payload.previewUrl = result.previewUrl;
+      return res.json(payload);
+    }
     return res.status(500).json({ message: 'Failed to send test email', error: result.error });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -68,6 +76,11 @@ router.post('/verify-otp', async (req, res) => {
     if (voter.isVerified) {
       return res.status(400).json({ message: 'Email already verified' });
     }
+
+    console.log('Received OTP:', otp);
+    console.log('Stored OTP:', voter.otp.code);
+    console.log('OTP Expiry:', voter.otp.expiry);
+    console.log('Current Time:', new Date());
 
     if (!voter.otp || voter.otp.code !== otp || voter.otp.expiry < new Date()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
