@@ -28,6 +28,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.options('*', cors()); // Handle preflight OPTIONS requests
 app.use(express.json());
 
 // Socket.io connection
