@@ -14,7 +14,9 @@ export default function VotingInterface() {
   const { user } = useAuth();
 
   useEffect(() => {
-    const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000');
+  // Vite exposes env variables via import.meta.env. Use VITE_BACKEND_URL if provided.
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const socket = io(backendUrl);
     
     fetchElection();
     checkVoteStatus();
@@ -33,7 +35,22 @@ export default function VotingInterface() {
   const fetchElection = async () => {
     try {
       const response = await api.get(`/elections/${id}`);
-      setElection(response.data);
+      let electionData = response.data;
+
+      // If candidates are only IDs (not populated), fetch candidate details and map
+      if (electionData.candidates && electionData.candidates.length > 0) {
+        const first = electionData.candidates[0];
+        const needsDetails = !first || typeof first === 'string' || !first.name;
+        if (needsDetails) {
+          const allCandidatesRes = await api.get('/candidates');
+          const allCandidates = allCandidatesRes.data || [];
+          const candidatesMap = {};
+          allCandidates.forEach((c) => (candidatesMap[c._id] = c));
+          electionData.candidates = electionData.candidates.map((cid) => candidatesMap[cid] || { _id: cid, name: 'Candidate', party: '' });
+        }
+      }
+
+      setElection(electionData);
     } catch (error) {
       setError('Failed to fetch election details');
     } finally {

@@ -11,7 +11,8 @@ export default function ResultsVisualization() {
   const { id } = useParams();
 
   useEffect(() => {
-    const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000');
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const socket = io(backendUrl);
 
     const fetchElectionResults = async () => {
       try {

@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import Voter from '../models/Voter.js';
-import { sendOTP, generateOTP } from '../utils/emailService.js';
+import { sendOTP, generateOTP, verifyOTP } from '../utils/emailService.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -20,24 +20,30 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password,
-      otp: {
-        code: otp,
-        expiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-      }
+      isVerified: false
     });
 
     await voter.save();
     const sendResult = await sendOTP(email, otp);
 
     if (!sendResult.success) {
-      // Keep the voter in DB but inform the client about email failure
-      console.warn('OTP send failed for', email, sendResult.error);
-      return res.status(201).json({ message: 'Registration successful, but OTP email failed to send.', emailError: sendResult.error });
+      // If email fails, delete the voter and return error
+      await Voter.deleteOne({ email });
+      return res.status(500).json({ 
+        message: 'Failed to send verification email. Please try again.',
+        error: sendResult.error 
+      });
     }
 
-    // Return previewUrl when using Ethereal test account so devs can open the message
-    const responsePayload = { message: 'Registration successful. Please verify your email.' };
-    if (sendResult.previewUrl) responsePayload.previewUrl = sendResult.previewUrl;
+    const responsePayload = { 
+      message: 'Registration initiated. Please verify your email.',
+      email 
+    };
+    
+    // Include preview URL for development
+    if (sendResult.previewUrl) {
+      responsePayload.previewUrl = sendResult.previewUrl;
+    }
 
     res.status(201).json(responsePayload);
   } catch (error) {
@@ -46,6 +52,90 @@ router.post('/register', async (req, res) => {
 });
 
 // Test email endpoint (useful for debugging delivery)
+// Verify OTP endpoint
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const voter = await Voter.findOne({ email });
+    if (!voter) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (voter.isVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    const verificationResult = verifyOTP(email, otp);
+    
+    if (!verificationResult.valid) {
+      return res.status(400).json({ message: verificationResult.message });
+    }
+
+    // Update voter status
+    voter.isVerified = true;
+    await voter.save();
+
+    // Generate JWT token for automatic login
+    const token = jwt.sign(
+      { id: voter._id, email: voter.email, role: voter.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({ 
+      message: 'Email verified successfully',
+      token,
+      user: {
+        id: voter._id,
+        name: voter.name,
+        email: voter.email,
+        role: voter.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Resend OTP endpoint
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const voter = await Voter.findOne({ email });
+    if (!voter) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (voter.isVerified) {
+      return res.status(400).json({ message: 'Email already verified' });
+    }
+
+    const sendResult = await resendOTP(email);
+
+    if (!sendResult.success) {
+      return res.status(500).json({ 
+        message: 'Failed to send verification email',
+        error: sendResult.error 
+      });
+    }
+
+    const responsePayload = { 
+      message: 'Verification email resent successfully',
+      email 
+    };
+    
+    if (sendResult.previewUrl) {
+      responsePayload.previewUrl = sendResult.previewUrl;
+    }
+
+    res.json(responsePayload);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/test-email', async (req, res) => {
   try {
     const { email } = req.query;
@@ -77,17 +167,13 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email already verified' });
     }
 
-    console.log('Received OTP:', otp);
-    console.log('Stored OTP:', voter.otp.code);
-    console.log('OTP Expiry:', voter.otp.expiry);
-    console.log('Current Time:', new Date());
+    const verificationResult = verifyOTP(email, otp);
 
-    if (!voter.otp || voter.otp.code !== otp || voter.otp.expiry < new Date()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    if (!verificationResult.valid) {
+      return res.status(400).json({ message: verificationResult.message });
     }
 
     voter.isVerified = true;
-    voter.otp = undefined;
     await voter.save();
 
     res.json({ message: 'Email verified successfully' });

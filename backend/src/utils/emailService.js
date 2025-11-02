@@ -1,4 +1,8 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 let transporter;
 let usingTestAccount = false;
@@ -6,23 +10,35 @@ let testAccountInfo = null;
 
 const initTransporter = async () => {
   // If real credentials are provided, use Gmail SMTP. Otherwise, fall back to Ethereal test account.
+  console.log('Checking email credentials...');
+  console.log('EMAIL_USER:', process.env.EMAIL_USER);
+  console.log('EMAIL_PASSWORD exists:', !!process.env.EMAIL_PASSWORD);
+
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
     transporter = nodemailer.createTransport({
       service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // use SSL
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
+        pass: process.env.EMAIL_PASSWORD // This should be your App Password, not your regular Gmail password
       }
     });
 
     try {
       await transporter.verify();
       console.log('Email transporter is ready (Gmail)');
+      console.log('Using email account:', process.env.EMAIL_USER);
       usingTestAccount = false;
       return;
     } catch (err) {
-      console.warn('Gmail transporter verification failed:', err.message);
-      // fallthrough to create test account
+      console.error('Gmail transporter verification failed:', err);
+      console.error('Email configuration:', {
+        user: process.env.EMAIL_USER,
+        hasPassword: !!process.env.EMAIL_PASSWORD
+      });
+      throw err; // Don't fall back to Ethereal, we want to use real email
     }
   }
 
@@ -50,6 +66,9 @@ const initTransporter = async () => {
 // initialize transporter immediately
 initTransporter();
 
+// Store OTPs with their creation time and email
+const otpStore = new Map();
+
 export const sendOTP = async (email, otp) => {
   if (!transporter) {
     await initTransporter();
@@ -57,18 +76,42 @@ export const sendOTP = async (email, otp) => {
 
   try {
     const mailOptions = {
-      from: `${process.env.EMAIL_FROM_NAME || 'Voting System'} <${process.env.EMAIL_USER || (testAccountInfo && testAccountInfo.user) || 'no-reply@example.com'}>`,
+      from: `Voting System <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Voting System - Email Verification OTP',
       html: `
-        <h1>Email Verification</h1>
-        <p>Your OTP for email verification is: <strong>${otp}</strong></p>
-        <p>This OTP will expire in 10 minutes.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333; text-align: center;">Email Verification</h1>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h2 style="color: #444; text-align: center;">Your Verification Code</h2>
+            <div style="font-size: 32px; font-weight: bold; text-align: center; color: #007bff; margin: 20px 0;">
+              ${otp}
+            </div>
+          </div>
+          <p style="color: #666; text-align: center;">This verification code will expire in 10 minutes.</p>
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+            If you didn't request this code, please ignore this email.
+          </p>
+        </div>
       `
     };
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent to:', email, 'messageId:', info.messageId);
+
+    // Store OTP with timestamp
+    otpStore.set(email, {
+      otp,
+      createdAt: Date.now(),
+      attempts: 0
+    });
+
+    // Set OTP to expire after 10 minutes
+    setTimeout(() => {
+      if (otpStore.has(email) && otpStore.get(email).otp === otp) {
+        otpStore.delete(email);
+      }
+    }, 10 * 60 * 1000);
 
     let previewUrl = null;
     if (usingTestAccount) {
@@ -85,4 +128,44 @@ export const sendOTP = async (email, otp) => {
 
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const verifyOTP = (email, userOTP) => {
+  const otpData = otpStore.get(email);
+  
+  if (!otpData) {
+    return { valid: false, message: 'OTP has expired. Please request a new one.' };
+  }
+
+  // Increment attempts
+  otpData.attempts += 1;
+  
+  // Check if too many attempts
+  if (otpData.attempts >= 3) {
+    otpStore.delete(email);
+    return { valid: false, message: 'Too many attempts. Please request a new OTP.' };
+  }
+
+  // Check if OTP is expired (10 minutes)
+  if (Date.now() - otpData.createdAt > 10 * 60 * 1000) {
+    otpStore.delete(email);
+    return { valid: false, message: 'OTP has expired. Please request a new one.' };
+  }
+
+  // Verify OTP
+  if (otpData.otp === userOTP) {
+    otpStore.delete(email);
+    return { valid: true, message: 'OTP verified successfully.' };
+  }
+
+  return { valid: false, message: 'Invalid OTP. Please try again.' };
+};
+
+export const resendOTP = async (email) => {
+  // Remove existing OTP if any
+  otpStore.delete(email);
+  
+  // Generate and send new OTP
+  const newOTP = generateOTP();
+  return await sendOTP(email, newOTP);
 };
