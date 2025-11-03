@@ -14,6 +14,8 @@ const initTransporter = async () => {
   // Attempt to use Gmail SMTP
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
     console.log('Attempting to use Gmail SMTP...');
+    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
+    console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'Not set');
     try {
       transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -30,9 +32,12 @@ const initTransporter = async () => {
       usingTestAccount = false;
       return;
     } catch (err) {
-      console.error('Gmail transporter verification failed:', err);
+      console.error('Gmail transporter verification failed:', err.message);
+      console.error('Full error details:', JSON.stringify(err, null, 2));
       console.log('Falling back to other options...');
     }
+  } else {
+    console.log('EMAIL_USER or EMAIL_PASSWORD not set, skipping Gmail SMTP');
   }
 
   // Fallback to Ethereal test account
