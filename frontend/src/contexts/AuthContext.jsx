@@ -19,10 +19,27 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      // Check if token is expired
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      if (payload.exp < currentTime) {
+        localStorage.removeItem('token');
+        delete api.defaults.headers.common['Authorization'];
+        setLoading(false);
+        return;
+      }
+
       const response = await api.get('/auth/me');
       setUser(response.data);
     } catch (error) {
       localStorage.removeItem('token');
+      delete api.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
     }

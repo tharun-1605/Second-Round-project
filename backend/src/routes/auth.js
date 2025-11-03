@@ -23,8 +23,13 @@ router.post('/register', async (req, res) => {
       isVerified: false
     });
 
+    console.log('Attempting to save new voter...');
     await voter.save();
+    console.log('Voter saved successfully.');
+
+    console.log('Attempting to send OTP...');
     const sendResult = await sendOTP(email, otp);
+    console.log('OTP send process completed.');
 
     if (!sendResult.success) {
       await Voter.deleteOne({ email });
@@ -78,7 +83,7 @@ router.post('/verify-email', async (req, res) => {
 
     // Generate JWT token for automatic login
     const token = jwt.sign(
-      { id: voter._id, email: voter.email, role: voter.role },
+      { id: voter._id, email: voter.email, isAdmin: voter.isAdmin },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -90,7 +95,7 @@ router.post('/verify-email', async (req, res) => {
         id: voter._id,
         name: voter.name,
         email: voter.email,
-        role: voter.role
+        isAdmin: voter.isAdmin
       }
     });
   } catch (error) {
@@ -112,7 +117,8 @@ router.post('/resend-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email already verified' });
     }
 
-    const sendResult = await resendOTP(email);
+    const otp = generateOTP();
+    const sendResult = await sendOTP(email, otp);
 
     if (!sendResult.success) {
       return res.status(500).json({ 

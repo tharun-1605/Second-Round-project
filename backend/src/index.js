@@ -25,8 +25,9 @@ const io = new Server(httpServer, {
 // Middleware
 const corsOptions = {
   origin: ['http://localhost:5173', 'https://second-round-project-ir7s.vercel.app'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 };
 app.use(cors(corsOptions));
 app.use(express.json());

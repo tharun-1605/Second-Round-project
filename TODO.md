@@ -1,0 +1,3 @@
+- [x] Fix inconsistencies in backend auth.js for /verify-email endpoint to use isAdmin instead of role
+- [x] Fix /resend-otp to use sendOTP instead of undefined resendOTP
+- [x] Add token expiration check in frontend AuthContext to prevent calling /auth/me with expired token
