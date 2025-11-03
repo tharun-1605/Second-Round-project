@@ -12,37 +12,37 @@ const initTransporter = async () => {
   console.log('Initializing email transporter...');
 
   // For production, prioritize reliable email services
-  // Try Mailgun if API key is available (free tier available)
-  if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
-    console.log('Attempting to use Mailgun...');
+  // Try Postmark if API key is available
+  if (process.env.POSTMARK_API_KEY && process.env.POSTMARK_FROM_EMAIL) {
+    console.log('Attempting to use Postmark...');
     try {
-      const formData = (await import('form-data')).default;
-      const Mailgun = (await import('mailgun.js')).default;
-      const mailgun = new Mailgun(formData).client({
-        username: 'api',
-        key: process.env.MAILGUN_API_KEY
-      });
+      const { ServerClient } = await import('postmark');
+      const postmarkClient = new ServerClient(process.env.POSTMARK_API_KEY);
+
+      // Test the connection by attempting to get server info
+      await postmarkClient.getServer();
 
       transporter = {
         sendMail: async (mailOptions) => {
-          const result = await mailgun.messages.create(process.env.MAILGUN_DOMAIN, {
-            from: mailOptions.from,
-            to: mailOptions.to,
-            subject: mailOptions.subject,
-            html: mailOptions.html
+          const result = await postmarkClient.sendEmail({
+            From: process.env.POSTMARK_FROM_EMAIL,
+            To: mailOptions.to,
+            Subject: mailOptions.subject,
+            HtmlBody: mailOptions.html
           });
           return {
-            messageId: result.id,
+            messageId: result.MessageID,
             response: '250 OK'
           };
         },
         verify: () => Promise.resolve(true)
       };
-      console.log('Mailgun transporter ready.');
+      console.log('Postmark transporter ready.');
       usingTestAccount = false;
       return;
     } catch (err) {
-      console.error('Mailgun setup failed:', err.message);
+      console.error('Postmark setup failed:', err.message);
+      console.log('Falling back to other email services...');
     }
   }
 
