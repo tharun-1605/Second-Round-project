@@ -126,7 +126,13 @@ export const sendOTP = async (email, otp) => {
       `
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    // Add timeout to prevent hanging
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email sending timeout')), 30000) // 30 second timeout
+    );
+
+    const info = await Promise.race([sendPromise, timeoutPromise]);
     console.log('Email sent to:', email, 'messageId:', info.messageId);
 
     otpStore.set(email, {
