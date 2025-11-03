@@ -42,7 +42,8 @@ router.post('/register', async (req, res) => {
 
     const responsePayload = {
       message: 'Registration initiated. Please verify your email.',
-      email
+      email,
+      messageId: sendResult.info?.messageId
     };
 
     if (sendResult.previewUrl) {

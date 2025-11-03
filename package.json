@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "form-data": "^4.0.4",
+    "mailgun.js": "^12.1.1"
+  }
+}

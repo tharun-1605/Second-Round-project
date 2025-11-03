@@ -11,23 +11,56 @@ let testAccountInfo = null;
 const initTransporter = async () => {
   console.log('Initializing email transporter...');
 
-  // Attempt to use Gmail SMTP
+  // For production, prioritize reliable email services
+  // Try Mailgun if API key is available (free tier available)
+  if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
+    console.log('Attempting to use Mailgun...');
+    try {
+      const formData = (await import('form-data')).default;
+      const Mailgun = (await import('mailgun.js')).default;
+      const mailgun = new Mailgun(formData).client({
+        username: 'api',
+        key: process.env.MAILGUN_API_KEY
+      });
+
+      transporter = {
+        sendMail: async (mailOptions) => {
+          const result = await mailgun.messages.create(process.env.MAILGUN_DOMAIN, {
+            from: mailOptions.from,
+            to: mailOptions.to,
+            subject: mailOptions.subject,
+            html: mailOptions.html
+          });
+          return {
+            messageId: result.id,
+            response: '250 OK'
+          };
+        },
+        verify: () => Promise.resolve(true)
+      };
+      console.log('Mailgun transporter ready.');
+      usingTestAccount = false;
+      return;
+    } catch (err) {
+      console.error('Mailgun setup failed:', err.message);
+    }
+  }
+
+  // Try Gmail SMTP with better configuration
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    console.log('Attempting to use Gmail SMTP...');
-    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'Not set');
-    console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'Not set');
+    console.log('Attempting to use Gmail SMTP with improved settings...');
     try {
       transporter = nodemailer.createTransport({
         service: 'gmail',
         host: 'smtp.gmail.com',
-        port: 587, // Changed from 465 to 587 for TLS
-        secure: false, // Changed to false for TLS
+        port: 587,
+        secure: false,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
         },
         tls: {
-          ciphers: 'SSLv3'
+          rejectUnauthorized: false
         }
       });
       await transporter.verify();
@@ -36,11 +69,8 @@ const initTransporter = async () => {
       return;
     } catch (err) {
       console.error('Gmail transporter verification failed:', err.message);
-      console.error('Full error details:', JSON.stringify(err, null, 2));
       console.log('Falling back to other options...');
     }
-  } else {
-    console.log('EMAIL_USER or EMAIL_PASSWORD not set, skipping Gmail SMTP');
   }
 
   // Fallback to Ethereal test account
@@ -83,7 +113,7 @@ const initTransporter = async () => {
     },
     verify: () => Promise.resolve(true)
   };
-  usingTestAccount = false; // Or a new flag like usingMockAccount
+  usingTestAccount = false;
 };
 
 // initialize transporter immediately
