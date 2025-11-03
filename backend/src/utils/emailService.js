@@ -24,16 +24,20 @@ const initTransporter = async () => {
 
       transporter = {
         sendMail: async (mailOptions) => {
-          const result = await postmarkClient.sendEmail({
-            From: process.env.POSTMARK_FROM_EMAIL,
-            To: mailOptions.to,
-            Subject: mailOptions.subject,
-            HtmlBody: mailOptions.html
-          });
-          return {
-            messageId: result.MessageID,
-            response: '250 OK'
-          };
+          try {
+            const result = await postmarkClient.sendEmail({
+              From: process.env.POSTMARK_FROM_EMAIL,
+              To: mailOptions.to,
+              Subject: mailOptions.subject,
+              HtmlBody: mailOptions.html
+            });
+            return {
+              messageId: result.MessageID,
+              response: '250 OK'
+            };
+          } catch (error) {
+            throw error;
+          }
         },
         verify: () => Promise.resolve(true)
       };

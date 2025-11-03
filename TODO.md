@@ -1,12 +1,7 @@
-# TODO: Replace Mailgun with Postmark for Email Service
+# TODO: Modify Postmark Transporter for Domain Restriction Errors
 
 ## Steps to Complete:
-- [x] Add 'postmark' dependency to backend/package.json
-- [x] Modify backend/src/utils/emailService.js to use Postmark instead of Mailgun
-- [ ] Update environment variables in .env (add POSTMARK_API_KEY and POSTMARK_FROM_EMAIL)
-- [ ] Test the email sending functionality
+- [x] Remove special handling for 422/412 errors in backend/src/utils/emailService.js to treat them as general failures
 
 ## Notes:
-- Ensure Postmark API key and from email are set in .env before running.
-- The code will fallback to Gmail or Ethereal if Postmark fails.
-- Dependencies installed successfully.
+- This ensures consistent error handling without differentiating domain restriction errors.
