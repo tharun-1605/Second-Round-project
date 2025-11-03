@@ -13,7 +13,7 @@ import Voter from './models/Voter.js';
 
 dotenv.config();
 
-const allowedOrigins = ['http://localhost:5173', 'https://second-round-project.vercel.app', 'https://second-round-project-ir7s.vercel.app', 'https://second-round-project.onrender.com'];
+const allowedOrigins = ['http://localhost:5173', 'https://second-round-project.vercel.app', 'https://second-round-project-ir7s.vercel.app', 'https://second-round-project.onrender.com', 'https://second-round-project-ou82.vercel.app'];
 
 const corsOptions = {
   origin: (origin, callback) => {
