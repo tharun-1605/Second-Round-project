@@ -13,22 +13,28 @@ import Voter from './models/Voter.js';
 
 dotenv.config();
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'https://second-round-project-ir7s.vercel.app'],
-    methods: ['GET', 'POST']
-  }
-});
+const allowedOrigins = ['http://localhost:5173', 'https://second-round-project-ir7s.vercel.app'];
 
-// Middleware
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://second-round-project-ir7s.vercel.app'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 };
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: corsOptions
+});
+
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
 app.use(cors(corsOptions));
 app.use(express.json());
 

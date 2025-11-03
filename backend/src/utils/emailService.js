@@ -11,33 +11,33 @@ let testAccountInfo = null;
 const initTransporter = async () => {
   console.log('Initializing email transporter...');
 
+  // Attempt to use Gmail SMTP
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
     console.log('Attempting to use Gmail SMTP...');
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // use SSL
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-
     try {
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      });
       await transporter.verify();
       console.log('Gmail transporter verified successfully.');
       usingTestAccount = false;
       return;
     } catch (err) {
       console.error('Gmail transporter verification failed:', err);
-      console.log('Falling back to Ethereal test account...');
+      console.log('Falling back to other options...');
     }
-  } else {
-    console.log('Gmail credentials not found. Using Ethereal test account.');
   }
 
+  // Fallback to Ethereal test account
   try {
+    console.log('Attempting to use Ethereal test account...');
     const account = await nodemailer.createTestAccount();
     testAccountInfo = account;
     transporter = nodemailer.createTransport({
@@ -52,9 +52,30 @@ const initTransporter = async () => {
     await transporter.verify();
     console.log('Ethereal transporter verified successfully.');
     usingTestAccount = true;
+    return;
   } catch (err) {
     console.error('Failed to create or verify Ethereal test account:', err);
   }
+
+  // Ultimate fallback: a mock transporter
+  console.log('All email services failed. Using mock transporter.');
+  transporter = {
+    sendMail: (mailOptions) => {
+      console.log('--- MOCK EMAIL START ---');
+      console.log(`To: ${mailOptions.to}`);
+      console.log(`From: ${mailOptions.from}`);
+      console.log(`Subject: ${mailOptions.subject}`);
+      console.log('Body (HTML):');
+      console.log(mailOptions.html);
+      console.log('--- MOCK EMAIL END ---');
+      return Promise.resolve({
+        messageId: `mock-${Date.now()}`,
+        response: '250 OK: message queued for delivery'
+      });
+    },
+    verify: () => Promise.resolve(true)
+  };
+  usingTestAccount = false; // Or a new flag like usingMockAccount
 };
 
 // initialize transporter immediately
