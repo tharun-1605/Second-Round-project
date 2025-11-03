@@ -20,11 +20,14 @@ const initTransporter = async () => {
       transporter = nodemailer.createTransport({
         service: 'gmail',
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
+        port: 587, // Changed from 465 to 587 for TLS
+        secure: false, // Changed to false for TLS
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
+        },
+        tls: {
+          ciphers: 'SSLv3'
         }
       });
       await transporter.verify();
