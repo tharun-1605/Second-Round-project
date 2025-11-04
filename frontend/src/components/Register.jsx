@@ -11,7 +11,7 @@ export default function Register() {
     otp: ''
   });
   const [error, setError] = useState('');
-  const { register, verifyOTP } = useAuth();
+  const { register, verifyOTP, registerWithoutOTP } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -103,13 +103,30 @@ export default function Register() {
             )}
           </div>
 
-          <div>
+          <div className="space-y-3">
             <button
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               {step === 1 ? 'Register' : 'Verify OTP'}
             </button>
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setError('');
+                  try {
+                    await registerWithoutOTP(formData.name, formData.email, formData.password);
+                    window.location.href = '/';
+                  } catch (error) {
+                    setError(error.response?.data?.message || 'An error occurred');
+                  }
+                }}
+                className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Didn't receive OTP? Register without verification
+              </button>
+            )}
           </div>
         </form>
         <div className="text-sm text-center">

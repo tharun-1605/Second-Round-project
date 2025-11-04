@@ -57,6 +57,49 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Register without verification endpoint
+router.post('/register-without-verification', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (await Voter.findOne({ email })) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    const voter = new Voter({
+      name,
+      email,
+      password,
+      isVerified: true
+    });
+
+    console.log('Attempting to save new voter without verification...');
+    await voter.save();
+    console.log('Voter saved successfully without verification.');
+
+    // Generate JWT token for automatic login
+    const token = jwt.sign(
+      { id: voter._id, email: voter.email, isAdmin: voter.isAdmin },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'Registration completed successfully without verification.',
+      token,
+      user: {
+        id: voter._id,
+        name: voter.name,
+        email: voter.email,
+        isAdmin: voter.isAdmin
+      }
+    });
+  } catch (error) {
+    console.error('An unexpected error occurred during registration without verification:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
 // Test email endpoint (useful for debugging delivery)
 // Verify OTP endpoint
 router.post('/verify-email', async (req, res) => {

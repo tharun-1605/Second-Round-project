@@ -64,6 +64,15 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const registerWithoutOTP = async (name, email, password) => {
+    const response = await api.post('/auth/register-without-verification', { name, email, password });
+    const { token, user } = response.data;
+    localStorage.setItem('token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(user);
+    return user;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
@@ -71,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyOTP, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyOTP, registerWithoutOTP, logout }}>
       {children}
     </AuthContext.Provider>
   );

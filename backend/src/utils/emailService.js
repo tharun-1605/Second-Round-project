@@ -5,119 +5,30 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 let transporter;
-let usingTestAccount = false;
-let testAccountInfo = null;
 
 const initTransporter = async () => {
-  console.log('Initializing email transporter...');
+  console.log('Initializing Gmail SMTP transporter...');
 
-  // For production, prioritize reliable email services
-  // Try Postmark if API key is available
-  if (process.env.POSTMARK_API_KEY && process.env.POSTMARK_FROM_EMAIL) {
-    console.log('Attempting to use Postmark...');
-    try {
-      const { ServerClient } = await import('postmark');
-      const postmarkClient = new ServerClient(process.env.POSTMARK_API_KEY);
-
-      // Test the connection by attempting to get server info
-      await postmarkClient.getServer();
-
-      transporter = {
-        sendMail: async (mailOptions) => {
-          try {
-            const result = await postmarkClient.sendEmail({
-              From: process.env.POSTMARK_FROM_EMAIL,
-              To: mailOptions.to,
-              Subject: mailOptions.subject,
-              HtmlBody: mailOptions.html
-            });
-            return {
-              messageId: result.MessageID,
-              response: '250 OK'
-            };
-          } catch (error) {
-            throw error;
-          }
-        },
-        verify: () => Promise.resolve(true)
-      };
-      console.log('Postmark transporter ready.');
-      usingTestAccount = false;
-      return;
-    } catch (err) {
-      console.error('Postmark setup failed:', err.message);
-      console.log('Falling back to other email services...');
-    }
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    throw new Error('EMAIL_USER and EMAIL_PASSWORD environment variables are required for Gmail SMTP');
   }
 
-  // Try Gmail SMTP with better configuration
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    console.log('Attempting to use Gmail SMTP with improved settings...');
-    try {
-      transporter = nodemailer.createTransport({
-        service: 'gmail',
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
-      await transporter.verify();
-      console.log('Gmail transporter verified successfully.');
-      usingTestAccount = false;
-      return;
-    } catch (err) {
-      console.error('Gmail transporter verification failed:', err.message);
-      console.log('Falling back to other options...');
-    }
-  }
-
-  // Fallback to Ethereal test account
-  try {
-    console.log('Attempting to use Ethereal test account...');
-    const account = await nodemailer.createTestAccount();
-    testAccountInfo = account;
-    transporter = nodemailer.createTransport({
-      host: account.smtp.host,
-      port: account.smtp.port,
-      secure: account.smtp.secure,
-      auth: {
-        user: account.user,
-        pass: account.pass
-      }
-    });
-    await transporter.verify();
-    console.log('Ethereal transporter verified successfully.');
-    usingTestAccount = true;
-    return;
-  } catch (err) {
-    console.error('Failed to create or verify Ethereal test account:', err);
-  }
-
-  // Ultimate fallback: a mock transporter
-  console.log('All email services failed. Using mock transporter.');
-  transporter = {
-    sendMail: (mailOptions) => {
-      console.log('--- MOCK EMAIL START ---');
-      console.log(`To: ${mailOptions.to}`);
-      console.log(`From: ${mailOptions.from}`);
-      console.log(`Subject: ${mailOptions.subject}`);
-      console.log('Body (HTML):');
-      console.log(mailOptions.html);
-      console.log('--- MOCK EMAIL END ---');
-      return Promise.resolve({
-        messageId: `mock-${Date.now()}`,
-        response: '250 OK: message queued for delivery'
-      });
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
     },
-    verify: () => Promise.resolve(true)
-  };
-  usingTestAccount = false;
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  await transporter.verify();
+  console.log('Gmail SMTP transporter verified successfully.');
 };
 
 // initialize transporter immediately
@@ -140,7 +51,7 @@ export const sendOTP = async (email, otp) => {
     }
 
     const mailOptions = {
-      from: usingTestAccount ? 'Voting System <noreply@test.com>' : `Voting System <${process.env.EMAIL_USER}>`,
+      from: `Voting System <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Voting System - Email Verification OTP',
       html: `
@@ -181,13 +92,7 @@ export const sendOTP = async (email, otp) => {
       }
     }, 10 * 60 * 1000);
 
-    let previewUrl = null;
-    if (usingTestAccount) {
-      previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log('Preview URL:', previewUrl);
-    }
-
-    return { success: true, info, previewUrl };
+    return { success: true, info };
   } catch (error) {
     console.error('Email sending failed:', error);
     return { success: false, error: error.message };

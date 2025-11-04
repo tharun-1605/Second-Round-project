@@ -1,7 +1,8 @@
-# TODO: Modify Postmark Transporter for Domain Restriction Errors
+# TODO List for Email Protocol and OTP Registration Changes
 
-## Steps to Complete:
-- [x] Remove special handling for 422/412 errors in backend/src/utils/emailService.js to treat them as general failures
-
-## Notes:
-- This ensures consistent error handling without differentiating domain restriction errors.
+- [x] Modify backend/src/utils/emailService.js to use only Gmail SMTP (remove Postmark, Ethereal, mock fallbacks)
+- [x] Add new endpoint /register-without-verification in backend/src/routes/auth.js that saves user with isVerified: true without sending OTP
+- [x] Add registerWithoutOTP function in frontend/src/contexts/AuthContext.jsx to call the new endpoint
+- [x] Update frontend/src/components/Register.jsx to add "Didn't receive OTP?" button in step 2 that calls registerWithoutOTP and redirects to login
+- [ ] Test Gmail SMTP only
+- [ ] Test registration without OTP
