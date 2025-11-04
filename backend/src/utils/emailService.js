@@ -16,15 +16,18 @@ const initTransporter = async () => {
   transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
     },
     tls: {
       rejectUnauthorized: false
-    }
+    },
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 30000,   // 30 seconds
+    socketTimeout: 60000      // 60 seconds
   });
 
   await transporter.verify();
@@ -74,7 +77,7 @@ export const sendOTP = async (email, otp) => {
     // Add timeout to prevent hanging
     const sendPromise = transporter.sendMail(mailOptions);
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Email sending timeout')), 30000) // 30 second timeout
+      setTimeout(() => reject(new Error('Email sending timeout')), 60000) // 60 second timeout
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);

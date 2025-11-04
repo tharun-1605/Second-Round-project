@@ -32,6 +32,10 @@ export default function Register() {
       }
     } catch (error) {
       setError(error.response?.data?.message || 'An error occurred');
+      // If email sending failed during registration, still proceed to OTP step
+      if (step === 1 && error.response?.data?.message?.includes('Failed to send verification email')) {
+        setStep(2);
+      }
     }
   };
 
