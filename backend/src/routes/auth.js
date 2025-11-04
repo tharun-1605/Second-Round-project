@@ -15,42 +15,34 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const otp = generateOTP();
     const voter = new Voter({
       name,
       email,
       password,
-      isVerified: false
+      isVerified: true
     });
 
     console.log('Attempting to save new voter...');
     await voter.save();
     console.log('Voter saved successfully.');
 
-    console.log('Attempting to send OTP...');
-    const sendResult = await sendOTP(email, otp);
-    console.log('OTP send process completed.');
+    // Generate JWT token for automatic login
+    const token = jwt.sign(
+      { id: voter._id, email: voter.email, isAdmin: voter.isAdmin },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
-    if (!sendResult.success) {
-      await Voter.deleteOne({ email });
-      console.error('Email sending failed during registration:', sendResult.error);
-      return res.status(500).json({
-        message: 'Failed to send verification email. Please try again.',
-        error: sendResult.error
-      });
-    }
-
-    const responsePayload = {
-      message: 'Registration initiated. Please verify your email.',
-      email,
-      messageId: sendResult.info?.messageId
-    };
-
-    if (sendResult.previewUrl) {
-      responsePayload.previewUrl = sendResult.previewUrl;
-    }
-
-    res.status(201).json(responsePayload);
+    res.status(201).json({
+      message: 'Registration completed successfully.',
+      token,
+      user: {
+        id: voter._id,
+        name: voter.name,
+        email: voter.email,
+        isAdmin: voter.isAdmin
+      }
+    });
   } catch (error) {
     console.error('An unexpected error occurred during registration:', error);
     res.status(500).json({ message: 'An internal server error occurred.' });
@@ -240,10 +232,6 @@ router.post('/login', async (req, res) => {
 
     if (!voter || !(await voter.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    if (!voter.isVerified) {
-      return res.status(401).json({ message: 'Please verify your email first' });
     }
 
     const token = jwt.sign(

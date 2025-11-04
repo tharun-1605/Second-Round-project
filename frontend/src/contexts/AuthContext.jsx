@@ -56,7 +56,11 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     const response = await api.post('/auth/register', { name, email, password });
-    return response.data;
+    const { token, user } = response.data;
+    localStorage.setItem('token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(user);
+    return user;
   };
 
   const verifyOTP = async (email, otp) => {
