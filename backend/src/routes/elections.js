@@ -59,7 +59,7 @@ router.get('/:id', async (req, res) => {
 // Get election results
 router.get('/:id/results', async (req, res) => {
   try {
-    const election = await Election.findById(req.params.id).populate('candidates');
+    const election = await Election.findById(req.params.id).populate('candidates').populate('winner.candidate');
     if (!election) return res.status(404).json({ message: 'Election not found' });
 
     const totalVoters = election.voterCount || 0;
@@ -72,12 +72,50 @@ router.get('/:id/results', async (req, res) => {
 
     const totalVotes = candidates.reduce((s, c) => s + c.voteCount, 0);
 
+    // Check if election has ended and should be finalized
+    const now = new Date();
+    const endDate = new Date(election.endDate);
+    const shouldFinalize = now > endDate && election.status === 'completed';
+
+    let winner = null;
+    if (election.status === 'finalized' && election.winner) {
+      winner = {
+        candidate: election.winner.candidate,
+        votes: election.winner.votes,
+        finalizedAt: election.winner.finalizedAt
+      };
+    } else if (shouldFinalize) {
+      // Auto-finalize election and determine winner
+      const maxVotes = Math.max(...candidates.map(c => c.voteCount));
+      const winningCandidates = candidates.filter(c => c.voteCount === maxVotes);
+
+      if (winningCandidates.length === 1) {
+        winner = {
+          candidate: winningCandidates[0],
+          votes: maxVotes,
+          finalizedAt: new Date()
+        };
+
+        // Update election status to finalized
+        election.status = 'finalized';
+        election.winner = {
+          candidate: winningCandidates[0]._id,
+          votes: maxVotes,
+          finalizedAt: new Date()
+        };
+        await election.save();
+      }
+    }
+
     res.json({
       _id: election._id,
       title: election.title,
+      status: election.status,
+      endDate: election.endDate,
       candidates,
       totalVotes,
-      totalVoters
+      totalVoters,
+      winner
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

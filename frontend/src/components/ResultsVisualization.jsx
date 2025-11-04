@@ -66,11 +66,55 @@ export default function ResultsVisualization() {
     party: candidate.party
   }));
 
+  const isElectionEnded = new Date() > new Date(electionData.endDate);
+  const isFinalized = electionData.status === 'finalized';
+  const showWinner = isFinalized && electionData.winner;
+
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="card">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">{electionData.title} - Live Results</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">
+            {electionData.title} - {isFinalized ? 'Final Results' : 'Live Results'}
+          </h1>
+
+          {showWinner && (
+            <div className="mb-8 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-8 w-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-yellow-800">
+                    🏆 Election Winner
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p className="font-semibold text-xl">{electionData.winner.candidate.name}</p>
+                    <p className="text-lg">{electionData.winner.candidate.party}</p>
+                    <p className="mt-1">{electionData.winner.votes} votes</p>
+                    <p className="text-xs mt-1">
+                      Finalized on {new Date(electionData.winner.finalizedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isElectionEnded && !isFinalized && (
+            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <p className="text-blue-800 text-sm">
+                  Election has ended. Results will be finalized shortly.
+                </p>
+              </div>
+            </div>
+          )}
           
           {/* Stats Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

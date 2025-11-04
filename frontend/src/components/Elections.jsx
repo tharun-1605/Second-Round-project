@@ -19,7 +19,7 @@ export default function Elections() {
       // Filter active elections: either status === 'active' or within start/endDate
       const now = new Date();
       const active = data.filter((e) => {
-        if (e.status === 'active') return true;
+        if (e.status === 'active' || e.status === 'finalized') return true;
         const start = new Date(e.startDate);
         const end = new Date(e.endDate);
         return now >= start && now <= end;
@@ -86,18 +86,34 @@ export default function Elections() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => navigate(`/elections/${election._id}/vote`)}
-                      className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-medium shadow-sm hover:shadow-indigo-100 hover:shadow-lg transition-all duration-200"
-                    >
-                      Vote Now
-                    </button>
-                    <Link 
-                      to={`/elections/${election._id}/results`} 
-                      className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-indigo-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
-                    >
-                      View Results
-                    </Link>
+                    {election.status === 'finalized' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                          🏆 Winner Announced
+                        </span>
+                        <Link
+                          to={`/elections/${election._id}/results`}
+                          className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-indigo-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
+                        >
+                          View Final Results
+                        </Link>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => navigate(`/elections/${election._id}/vote`)}
+                          className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-medium shadow-sm hover:shadow-indigo-100 hover:shadow-lg transition-all duration-200"
+                        >
+                          Vote Now
+                        </button>
+                        <Link
+                          to={`/elections/${election._id}/results`}
+                          className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-indigo-100 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200"
+                        >
+                          View Results
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

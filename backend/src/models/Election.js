@@ -19,8 +19,21 @@ const electionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['upcoming', 'active', 'completed'],
+    enum: ['upcoming', 'active', 'completed', 'finalized'],
     default: 'upcoming'
+  },
+  winner: {
+    candidate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Candidate'
+    },
+    votes: {
+      type: Number,
+      default: 0
+    },
+    finalizedAt: {
+      type: Date
+    }
   },
   candidates: [{
     type: mongoose.Schema.Types.ObjectId,
